@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DONG</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --accent: #ff6b6b;
+    --gold:   #ffd93d;
+    --bg:     #3a3a6e;
+    --surface:#4a4a90;
+    --text:   #ffffff;
+    --dim:    #bbbbdd;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Arial Black', 'Arial Bold', Arial, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── screens ── */
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .screen.on { display: flex; }
+
+  /* ── MENU ── */
+  .big-title {
+    font-size: clamp(80px, 18vw, 160px);
+    letter-spacing: .22em;
+    padding-right: .22em; /* offset for letter-spacing */
+    background: linear-gradient(90deg, #ff6b6b 0%, #ffd93d 40%, #ff9f43 60%, #ff6b6b 100%);
+    background-size: 200%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: titleShine 3s linear infinite;
+    line-height: 1;
+    filter: drop-shadow(0 0 14px rgba(255,217,61,.12));
+  }
+  @keyframes titleShine { to { background-position: -200% center; } }
+
+  .big-title::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: inherit;
+    -webkit-mask-image: linear-gradient(transparent 0 8%, rgba(0,0,0,1) 12%, transparent 18%, rgba(0,0,0,1) 25%, transparent 35%, rgba(0,0,0,1) 48%, transparent 58%, rgba(0,0,0,1) 70%, transparent 78%, rgba(0,0,0,1) 92%, transparent 100%);
+    mask-image: linear-gradient(transparent 0 8%, rgba(0,0,0,1) 12%, transparent 18%, rgba(0,0,0,1) 25%, transparent 35%, rgba(0,0,0,1) 48%, transparent 58%, rgba(0,0,0,1) 70%, transparent 78%, rgba(0,0,0,1) 92%, transparent 100%);
+    opacity: .9;
+    animation: randomFlicker 5s steps(1, end) infinite;
+    pointer-events: none;
+  }
+
+  @keyframes randomFlicker {
+    0%   { opacity: 1; }
+    10%  { opacity: .15; }
+    20%  { opacity: .95; }
+    30%  { opacity: .25; }
+    40%  { opacity: .9; }
+    50%  { opacity: .05; }
+    60%  { opacity: 1; }
+    70%  { opacity: .2; }
+    80%  { opacity: .85; }
+    90%  { opacity: .08; }
+    100% { opacity: 1; }
+  }
+
+  .tagline {
+    font-size: 14px;
+    letter-spacing: .35em;
+    color: var(--dim);
+    margin: 14px 0 56px;
+    font-weight: normal;
+    text-transform: uppercase;
+  }
+
+  .row { display: flex; gap: 16px; }
+  .col { display: flex; flex-direction: column; gap: 12px; align-items: center; }
+
+  .btn {
+    padding: 13px 36px;
+    font-size: 16px;
+    font-family: inherit;
+    font-weight: bold;
+    letter-spacing: .12em;
+    cursor: pointer;
+    border-radius: 7px;
+    border: 2px solid var(--accent);
+    background: transparent;
+    color: var(--text);
+    min-width: 160px;
+    transition: background .15s, transform .1s, box-shadow .15s;
+  }
+  .btn:hover {
+    background: rgba(255,107,107,.22);
+    box-shadow: 0 0 18px rgba(255,107,107,.28);
+    transform: translateY(-2px);
+  }
+  .btn:active { transform: translateY(0); }
+  .btn.fill { background: var(--accent); }
+  .btn.fill:hover { background: #ff8a8a; }
+
+  .hint-text {
+    margin-top: 48px;
+    font-size: 11px;
+    letter-spacing: .22em;
+    color: #5555aa;
+    font-weight: normal;
+  }
+
+  /* ── SETTINGS ── */
+  #settings-screen h2 {
+    font-size: 38px;
+    color: var(--gold);
+    margin-bottom: 36px;
+    letter-spacing: .1em;
+  }
+
+  .sett-table {
+    border-collapse: separate;
+    border-spacing: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .sett-table td:first-child {
+    color: #8888aa;
+    font-size: 14px;
+    font-weight: normal;
+    text-align: right;
+    letter-spacing: .08em;
+    padding-right: 8px;
+  }
+
+  select {
+    background: var(--surface);
+    color: var(--text);
+    border: 2px solid #7777c0;
+    border-radius: 6px;
+    padding: 8px 14px;
+    font-size: 15px;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+    min-width: 164px;
+    transition: border-color .15s;
+  }
+  select:hover, select:focus { border-color: var(--accent); }
+
+  .ctrl-box {
+    margin-top: 22px;
+    border: 1px solid #6666aa;
+    border-radius: 8px;
+    padding: 14px 32px;
+    font-size: 12px;
+    color: var(--dim);
+    text-align: center;
+    line-height: 2.2;
+    letter-spacing: .06em;
+    font-weight: normal;
+  }
+
+  /* ── GAME ── */
+  #game-screen { position: relative; background: var(--bg); }
+
+  #gc { display: block; }
+
+  #pause-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.1);
+    color: rgba(255,255,255,.55);
+    font-size: 17px;
+    padding: 4px 13px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background .15s, color .15s;
+    z-index: 5;
+    font-family: inherit;
+    letter-spacing: .05em;
+  }
+  #pause-btn:hover {
+    background: rgba(255,255,255,.18);
+    color: #fff;
+  }
+
+  /* ── OVERLAYS ── */
+  .overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.8);
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+  }
+  .overlay.on { display: flex; }
+
+  .overlay h2 {
+    font-size: clamp(28px, 5vw, 50px);
+    margin-bottom: 8px;
+  }
+  .overlay .sub {
+    font-size: 20px;
+    color: #6666aa;
+    margin-bottom: 34px;
+    font-weight: normal;
+    letter-spacing: .08em;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ MENU ═══════════════ -->
+<div id="menu-screen" class="screen on">
+  <div class="big-title">DONG</div>
+  <p class="tagline">💩 &nbsp; The Ultimate Poop Pong &nbsp; 💩</p>
+  <div class="row">
+    <button class="btn fill" id="btn-play">▶&nbsp; PLAY</button>
+    <button class="btn"      id="btn-settings">⚙&nbsp; SETTINGS</button>
+  </div>
+  <p class="hint-text">P1: W / S &nbsp;&nbsp;│&nbsp;&nbsp; P2: ↑ / ↓ &nbsp;&nbsp;│&nbsp;&nbsp; ESC or P: Pause</p>
+</div>
+
+<!-- ═══════════════ SETTINGS ═══════════════ -->
+<div id="settings-screen" class="screen">
+  <h2>⚙ SETTINGS</h2>
+  <table class="sett-table">
+    <tr>
+      <td>Ball Speed</td>
+      <td>
+        <select id="opt-speed">
+          <option value="4">🐢  Slow</option>
+          <option value="6" selected>⚡  Normal</option>
+          <option value="9">🔥  Fast</option>
+          <option value="14">💀  Insane</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>Win Score</td>
+      <td>
+        <select id="opt-score">
+          <option value="1">1 Point</option>
+          <option value="2">2 Points</option>
+          <option value="3">3 Points</option>
+          <option value="4">4 Points</option>
+          <option value="5">5 Points</option>
+          <option value="6">6 Points</option>
+          <option value="7">7 Points</option>
+          <option value="8">8 Points</option>
+          <option value="9">9 Points</option>
+          <option value="10" selected>10 Points</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>Game Mode</td>
+      <td>
+        <select id="opt-mode">
+          <option value="pvp">👥  2 Players</option>
+          <option value="ai" selected>🤖  vs AI</option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td>AI Difficulty</td>
+      <td>
+        <select id="opt-ai">
+          <option value="easy">🟢  Easy</option>
+          <option value="normal" selected>🟡  Normal</option>
+          <option value="hard">🔴  Hard</option>
+          <option value="impossible">💀  Impossible</option>
+        </select>
+      </td>
+    </tr>
+  </table>
+
+  <div class="ctrl-box">
+    <strong style="color:#9999cc; letter-spacing:.18em">CONTROLS</strong><br>
+    Player 1 &nbsp;&nbsp;W / S&nbsp;&nbsp; — &nbsp;&nbsp;Player 2 &nbsp;&nbsp;↑ / ↓<br>
+    Pause&nbsp;&nbsp;ESC &nbsp;or&nbsp; P &nbsp;|&nbsp; Resume with ▶ button
+  </div>
+
+  <div class="row" style="margin-top:32px">
+    <button class="btn fill" id="btn-back">← &nbsp;BACK</button>
+  </div>
+</div>
+
+<!-- ═══════════════ GAME ═══════════════ -->
+<div id="game-screen" class="screen">
+  <canvas id="gc"></canvas>
+  <button id="pause-btn">⏸ PAUSE</button>
+
+  <!-- pause overlay -->
+  <div class="overlay" id="ov-pause">
+    <h2 style="color:var(--gold)">⏸ &nbsp;PAUSED</h2>
+    <p class="sub">game is on hold</p>
+    <div class="col">
+      <button class="btn fill" id="btn-resume">▶&nbsp; RESUME</button>
+      <button class="btn"      id="btn-quit">⌂&nbsp; MAIN MENU</button>
+    </div>
+  </div>
+
+  <!-- win overlay -->
+  <div class="overlay" id="ov-win">
+    <h2 id="win-title" style="color:var(--gold)">🏆 PLAYER 1 WINS!</h2>
+    <p class="sub" id="win-score">0 — 0</p>
+    <div class="col">
+      <button class="btn fill" id="btn-again">↺&nbsp; PLAY AGAIN</button>
+      <button class="btn"      id="btn-win-menu">⌂&nbsp; MAIN MENU</button>
+    </div>
+  </div>
+
+  <!-- countdown overlay -->
+  <div class="overlay" id="ov-countdown" style="background:rgba(0,0,0,.72)">
+    <div id="countdown-num" style="font-size:clamp(180px,40vw,380px);line-height:1;color:#ffd93d;text-shadow:0 0 80px rgba(255,217,61,.8)"></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ================================================================
+//  CONSTANTS
+// ================================================================
+const ES      = 44;           // emoji render size (font px)
+const ROWS    = 5;            // toilet emojis stacked per paddle
+const PW      = ES;           // paddle visual width  (~1 emoji wide)
+const PH      = ES * ROWS;    // paddle visual height (5 emojis tall)
+const PM      = 6;            // paddle margin from vertical wall (px)
+const PSPEED  = 5.5;          // paddle movement speed (px/frame)
+
+const B_EMOJI = '💩';
+const P_EMOJI = '🚽';
+
+// collision edges (relative to wall)
+const P1_RIGHT = PM + PW;     // right edge of left paddle
+// P2_LEFT  = W - PM - PW     // left  edge of right paddle (depends on W)
+
+// ================================================================
+//  MUTABLE STATE
+// ================================================================
+let W, H;
+let cfg   = {};
+let ball  = {};
+let p1    = {}, p2 = {};
+let keys  = {};
+let alive = false, paused = false;
+let raf   = null;
+
+// ================================================================
+//  DOM REFS
+// ================================================================
+const canvas = document.getElementById('gc');
+const ctx    = canvas.getContext('2d');
+
+// ================================================================
+//  SCREEN HELPERS
+// ================================================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('on'));
+  document.getElementById(id).classList.add('on');
+}
+function ovOn(id)  { document.getElementById(id).classList.add('on'); }
+function ovOff(id) { document.getElementById(id).classList.remove('on'); }
+
+// ================================================================
+//  BUTTON WIRING
+// ================================================================
+document.getElementById('btn-play').onclick = () => {
+  const el = document.documentElement;
+  if (el.requestFullscreen) el.requestFullscreen();
+  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+  beginGame();
+};
+document.getElementById('btn-settings').onclick = () => showScreen('settings-screen');
+document.getElementById('btn-back').onclick     = () => showScreen('menu-screen');
+document.getElementById('pause-btn').onclick    = doPause;
+document.getElementById('btn-resume').onclick   = doResume;
+document.getElementById('btn-quit').onclick     = () => exitToMenu();
+document.getElementById('btn-again').onclick    = beginGame;
+document.getElementById('btn-win-menu').onclick = () => exitToMenu();
+
+// ================================================================
+//  COUNTDOWN
+// ================================================================
+function startCountdown() {
+  const el  = document.getElementById('countdown-num');
+  const ov  = document.getElementById('ov-countdown');
+  let   cnt = 5;
+
+  el.textContent = cnt;
+  ov.classList.add('on');
+
+  const tick = setInterval(() => {
+    cnt--;
+    if (cnt > 0) {
+      el.textContent = cnt;
+    } else {
+      el.style.fontSize = 'clamp(60px,14vw,120px)';
+      el.textContent    = 'GO! 💩';
+      clearInterval(tick);
+      setTimeout(() => {
+        ov.classList.remove('on');
+        el.style.fontSize = '';
+        alive = true;
+        gameLoop();
+      }, 700);
+    }
+  }, 1000);
+}
+
+// ================================================================
+//  GAME SETUP
+// ================================================================
+function beginGame() {
+  cfg = {
+    speed:    parseFloat(document.getElementById('opt-speed').value),
+    winScore: parseInt(document.getElementById('opt-score').value),
+    mode:     document.getElementById('opt-mode').value,
+    aiDiff:   document.getElementById('opt-ai').value
+  };
+
+  // Responsive canvas — fill full viewport
+  W = window.innerWidth;
+  H = window.innerHeight;
+  canvas.width  = W;
+  canvas.height = H;
+
+  // Reset game state
+  p1   = { y: H / 2 - PH / 2, score: 0 };
+  p2   = { y: H / 2 - PH / 2, score: 0 };
+  keys = {};
+
+  ovOff('ov-pause');
+  ovOff('ov-win');
+  showScreen('game-screen');
+
+  alive  = false;  // frozen until countdown ends
+  paused = false;
+
+  spawnBall(Math.random() < 0.5 ? 1 : -1);
+
+  // Always remove first to avoid double-binding
+  document.removeEventListener('keydown', onKeyDown);
+  document.removeEventListener('keyup',   onKeyUp);
+  document.addEventListener('keydown', onKeyDown);
+  document.addEventListener('keyup',   onKeyUp);
+
+  cancelAnimationFrame(raf);
+  render();         // draw static frame so paddles are visible during countdown
+  startCountdown();
+}
+
+function exitToMenu() {
+  alive  = false;
+  paused = false;
+  cancelAnimationFrame(raf);
+  document.removeEventListener('keydown', onKeyDown);
+  document.removeEventListener('keyup',   onKeyUp);
+  keys = {};
+  ovOff('ov-pause');
+  ovOff('ov-win');
+  showScreen('menu-screen');
+}
+
+function spawnBall(dir) {
+  // Random angle ±30°, biased horizontal
+  const angle = (Math.random() * 60 - 30) * (Math.PI / 180);
+  ball = {
+    x:  W / 2,
+    y:  H / 2 + (Math.random() - 0.5) * H * 0.28,
+    vx: cfg.speed * Math.cos(angle) * dir,
+    vy: cfg.speed * Math.sin(angle)
+  };
+}
+
+// ================================================================
+//  INPUT
+// ================================================================
+function onKeyDown(e) {
+  keys[e.code] = true;
+  if (e.code === 'Escape' || e.code === 'KeyP') {
+    if (!alive) return;
+    paused ? doResume() : doPause();
+  }
+  if (['ArrowUp', 'ArrowDown', 'Space'].includes(e.code)) e.preventDefault();
+}
+function onKeyUp(e) { delete keys[e.code]; }
+
+// ================================================================
+//  PAUSE / RESUME
+// ================================================================
+function doPause() {
+  if (!alive || paused) return;
+  paused = true;
+  cancelAnimationFrame(raf);
+  ovOn('ov-pause');
+}
+
+function doResume() {
+  if (!alive) return;
+  paused = false;
+  ovOff('ov-pause');
+  gameLoop();
+}
+
+// ================================================================
+//  GAME LOOP
+// ================================================================
+function gameLoop() {
+  if (!alive || paused) return;
+  update();
+  render();
+  raf = requestAnimationFrame(gameLoop);
+}
+
+// ================================================================
+//  UPDATE
+// ================================================================
+function update() {
+  const p2Left = W - PM - PW;    // left edge of right paddle
+  const BR     = ES * 0.42;      // approximate ball radius
+
+  // ── Paddle movement ──
+  if (keys['KeyW']) p1.y -= PSPEED;
+  if (keys['KeyS']) p1.y += PSPEED;
+
+  if (cfg.mode === 'pvp') {
+    if (keys['ArrowUp'])   p2.y -= PSPEED;
+    if (keys['ArrowDown']) p2.y += PSPEED;
+  } else {
+    // AI follows the ball using a normal-player style movement speed.
+    const aiParams = {
+      easy:       0.55,
+      normal:     0.85,
+      hard:       1.00,
+      impossible: 1.15
+    };
+    const mult = aiParams[cfg.aiDiff] || aiParams.normal;
+    const targetY = ball.y - PH / 2;
+    const delta   = targetY - p2.y;
+    const step    = Math.min(Math.abs(delta), PSPEED * mult);
+
+    if (Math.abs(delta) > 6) {
+      p2.y += Math.sign(delta) * step;
+    }
+  }
+
+  p1.y = clamp(p1.y, 0, H - PH);
+  p2.y = clamp(p2.y, 0, H - PH);
+
+  // ── Ball movement ──
+  ball.x += ball.vx;
+  ball.y += ball.vy;
+
+  // Top / bottom wall bounces
+  if (ball.y - BR < 0)  { ball.y = BR;     ball.vy =  Math.abs(ball.vy); }
+  if (ball.y + BR > H)  { ball.y = H - BR; ball.vy = -Math.abs(ball.vy); }
+
+  // ── Paddle collision — P1 (left) ──
+  if (
+    ball.vx < 0 &&
+    ball.x - BR <= P1_RIGHT &&
+    ball.x + BR > 0 &&
+    ball.y + BR * 0.5 > p1.y &&
+    ball.y - BR * 0.5 < p1.y + PH
+  ) {
+    ball.x  = P1_RIGHT + BR;
+    ball.vx =  Math.abs(ball.vx) * 1.10;
+    applyDeflect(p1);
+  }
+
+  // ── Paddle collision — P2 (right) ──
+  if (
+    ball.vx > 0 &&
+    ball.x + BR >= p2Left &&
+    ball.x - BR < W &&
+    ball.y + BR * 0.5 > p2.y &&
+    ball.y - BR * 0.5 < p2.y + PH
+  ) {
+    ball.x  = p2Left - BR;
+    ball.vx = -Math.abs(ball.vx) * 1.10;
+    applyDeflect(p2);
+  }
+
+  // ── Scoring ──
+  if (ball.x + BR < 0) {           // exits LEFT → P2 scores
+    p2.score++;
+    if (!checkWin()) spawnBall(-1); // serve toward P1 (loser)
+  } else if (ball.x - BR > W) {    // exits RIGHT → P1 scores
+    p1.score++;
+    if (!checkWin()) spawnBall(1);  // serve toward P2 (loser)
+  }
+}
+
+function applyDeflect(paddle) {
+  // hit: -0.5 (top of paddle) to +0.5 (bottom)
+  const hit = (ball.y - paddle.y) / PH - 0.5;
+  ball.vy   = hit * cfg.speed * 2.8;
+
+  // Cap total speed to prevent runaway acceleration
+  const spd = Math.hypot(ball.vx, ball.vy);
+  const max = cfg.speed * 2.9;
+  if (spd > max) {
+    ball.vx = (ball.vx / spd) * max;
+    ball.vy = (ball.vy / spd) * max;
+  }
+}
+
+function checkWin() {
+  const w1 = p1.score >= cfg.winScore;
+  const w2 = p2.score >= cfg.winScore;
+  if (!w1 && !w2) return false;
+
+  alive = false;   // stops the loop after current frame
+  const winner = w1 ? 'PLAYER 1' : 'PLAYER 2';
+
+  setTimeout(() => {
+    if (cfg.mode === 'pvp') {
+      document.getElementById('win-title').textContent = `PLAYER ${winner === 'PLAYER 1' ? '1' : '2'} WINS HA HA!`;
+    } else {
+      document.getElementById('win-title').textContent = winner === 'PLAYER 1' ? `YOU WIN OI OI OI BAKA!!!` : `🤖 AI WINS BALARINA CAPUCHINA!!!!`;
+    }
+    document.getElementById('win-score').textContent = `${p1.score}  —  ${p2.score}`;
+    ovOn('ov-win');
+  }, 420);
+  return true;
+}
+
+function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
+
+// ================================================================
+//  RENDER
+// ================================================================
+function render() {
+  // ── Background ──
+  ctx.fillStyle = '#333368';
+  ctx.fillRect(0, 0, W, H);
+
+  // ── Centre dashed divider ──
+  ctx.save();
+  ctx.setLineDash([14, 11]);
+  ctx.strokeStyle = '#5555aa';
+  ctx.lineWidth   = 3;
+  ctx.beginPath();
+  ctx.moveTo(W / 2, 0);
+  ctx.lineTo(W / 2, H);
+  ctx.stroke();
+  ctx.restore();
+
+  // ── Scores ──
+  const scoreFontSz = Math.max(36, Math.floor(H * 0.13));
+  ctx.font         = `bold ${scoreFontSz}px Arial Black`;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle    = 'rgba(255,255,255,.45)';
+  ctx.fillText(p1.score, W * 0.25, 10);
+  ctx.fillText(p2.score, W * 0.75, 10);
+
+  // ── Paddles — 5 toilet emojis stacked ──
+  ctx.font         = `${ES}px serif`;
+  ctx.textAlign    = 'left';
+  ctx.textBaseline = 'top';
+  for (let i = 0; i < ROWS; i++) {
+    ctx.fillText(P_EMOJI, PM,          p1.y + i * ES);
+    ctx.fillText(P_EMOJI, W - PM - PW, p2.y + i * ES);
+  }
+
+  // ── Ball — poop emoji ──
+  ctx.font         = `${ES}px serif`;
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(B_EMOJI, ball.x, ball.y);
+}
+</script>
+</body>
+</html>
